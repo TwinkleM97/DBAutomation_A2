@@ -1,7 +1,10 @@
 -- PROG8850 Assignment 2 - Question 1: Database Schema Changes
+
+-- creating db named companydb
 CREATE DATABASE IF NOT EXISTS companydb;
 USE companydb;
 
+-- First, creating table named projects
 CREATE TABLE IF NOT EXISTS projects (
     project_id INT AUTO_INCREMENT PRIMARY KEY,
     project_name VARCHAR(255) NOT NULL,
@@ -21,7 +24,7 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
+-- inserting data in projects table
 INSERT INTO projects (project_name, start_date, end_date, budget) VALUES
 ('Website Redesign', '2025-01-15', '2025-03-15', 15000.00),
 ('Mobile App Development', '2025-02-01', '2025-06-30', 45000.00),

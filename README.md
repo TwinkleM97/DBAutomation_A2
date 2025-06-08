@@ -1,55 +1,105 @@
-# PROG8850Week1Installation
-install mysql, python
+# PROG8850 Assignment 2 - Database Automation & CI/CD
+
+## Student: Twinkle Mishra  - 8894858
+
+---
+
+## Overview
+
+This project automates MySQL database schema changes and simulates a CI/CD pipeline using GitHub Actions. It includes:
+
+- SQL scripts for schema creation and safe updates
+- A Python script for executing the SQL changes
+- GitHub Actions workflow for deployment automation
+- Dockerized MySQL environment with Adminer interface
+
+---
+
+## Project Structure
+
+```
+.
+├── automate_db.py              # Python script to apply schema & data
+├── schema_changes.sql          # Creates and alters 'projects' table
+├── add_departments.sql         # Inserts department records
+├── up.yml                      # Ansible playbook to start MySQL & Adminer
+├── down.yml                    # Ansible playbook to stop services
+├── mysql-adminer.yml           # Docker Compose for MySQL + Adminer
+├── bin/act                     # ACT binary to test GitHub Actions locally
+└── .github/workflows/ci_cd_pipeline.yml  # CI/CD workflow 
+```
+
+---
+
+## Setup & Testing
+
+### Start MySQL & Adminer
 
 ```bash
 ansible-playbook up.yml
 ```
 
-To use mysql:
+Access Adminer at: [http://localhost:8080]
+
+---
+
+### Run Automation Script
+
+```bash
+python automate_db.py
+```
+
+---
+
+### Verify via MySQL CLI
 
 ```bash
 mysql -u root -h 127.0.0.1 -p
+# Password: Secret5555
 ```
 
-To run github actions like (notice that the environment variables default for the local case):
-
-```yaml
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install MySQL client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
-
-      - name: Deploy to Database
-        env:
-          DB_HOST: ${{ secrets.DB_HOST || '127.0.0.1' }} 
-          DB_USER: ${{ secrets.DB_ADMIN_USER || 'root' }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD  || 'Secret5555'}}
-          DB_NAME: ${{ secrets.DB_NAME || 'mysql' }}
-        run: mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < schema_changes.sql
+Inside MySQL:
+```sql
+USE companydb;
+SHOW TABLES;
+DESCRIBE projects;
+DESCRIBE departments;
+SELECT * FROM projects;
+SELECT * FROM departments;
 ```
 
-locally:
+---
 
-first try
+### Test GitHub Actions Locally
 
 ```bash
 bin/act
 ```
 
-then if that doesn't work 
+### Push to GitHub
 
 ```bash
-bin/act -P ubuntu-latest=-self-hosted
+git add .
+git commit -m "Assignment 2 - Complete implementation"
+git push origin main
 ```
 
-to run in the codespace.
+---
 
-To shut down:
+## CI/CD Pipeline Summary
+
+- Triggers on push or manually
+- Builds MySQL client and installs dependencies
+- Runs SQL and Python scripts
+- Verifies inserts and structure
+- Outputs final deployment report
+
+---
+
+## Cleanup
 
 ```bash
 ansible-playbook down.yml
 ```
 
-This is a reproducible mysql setup
+---

@@ -1,12 +1,13 @@
 name: Database CI/CD Pipeline
 
+# Triggering workflow on push or pull request to main or master, and manual trigger
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-
+# Global environment variables (fallback to defaults if secrets not set)
 env:
   DB_HOST: ${{ secrets.DB_HOST || '127.0.0.1' }}
   DB_USER: ${{ secrets.DB_ADMIN_USER || 'root' }}
@@ -18,14 +19,14 @@ jobs:
     runs-on: ubuntu-latest
 
     services: 
-      mysql:
+      mysql:     # Set up MySQL as a service container
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: Secret5555
           MYSQL_DATABASE: companydb
         ports:
-          - 3307:3306
-        options: >-
+          - 3307:3306       # Map host port 3307 to container’s 3306
+        options: >-         # Adding health check for MySQL service
           --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -pSecret5555"
           --health-interval=10s
           --health-timeout=5s
@@ -33,20 +34,24 @@ jobs:
 
 
     steps:
+    # Step 1: Checkout the latest code from the repo
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+   
+    # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
+   
+    # Step 3: Install required packages (MySQL client and Python connector)
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y mysql-client
           pip install mysql-connector-python
-
+    
+     # Step 4: Wait for MySQL service to be fully up and healthy
       - name: Wait for MySQL Service
         run: |
           for i in {30..0}; do
@@ -61,26 +66,31 @@ jobs:
             echo " MySQL failed to start"
             exit 1
           fi
-
+       
+       # Step 5: Ensure companydb exists before running scripts
       - name: Set up MySQL Environment
         run: |
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 -e "CREATE DATABASE IF NOT EXISTS companydb;"
-
+       
+       # Step 6: Run both SQL scripts for schema and data updates
       - name: Execute SQL Scripts
         run: |
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 < schema_changes.sql || echo "::warning::schema_changes.sql failed"
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 < add_departments.sql || echo "::warning::add_departments.sql failed"
-
+      
+       # Step 7: Run Python automation script to execute SQL files
       - name: Run Python Automation Script
         run: |
           python automate_db.py || echo "::warning::Python script failed"
-
+      
+      # Step 8: Verify the deployed tables and their structures
       - name: Verify Database Deployment
         run: |
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 -e "USE companydb; SHOW TABLES;"
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 -e "USE companydb; DESCRIBE projects;"
           mysql -h 127.0.0.1 -P 3307 -u root -pSecret5555 -e "USE companydb; DESCRIBE departments;"
-
+      
+      # Step 9: Generate a deployment report and print to terminal
       - name: Generate Deployment Report
         run: |
           {
